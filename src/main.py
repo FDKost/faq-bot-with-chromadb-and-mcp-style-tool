@@ -2,7 +2,7 @@ import argparse
 import os
 from pathlib import Path
 
-from src.vector_store_utils import load_faq_to_qdrant
+from src.vector_store_utils import load_faq_to_chroma
 from src.langchain_agent import LangChainAgent
 
 def main():
@@ -12,10 +12,10 @@ def main():
 
     data_dir = Path(__file__).parent.parent / "data"
 
-    # Load data into Qdrant
-    vector_store = load_faq_to_qdrant(
+    # Load data into Chroma
+    vector_store = load_faq_to_chroma(
         data_dir=str(data_dir),
-        collection_name="faq_collection",
+        persist_directory="./chroma_faq",
     )
 
     agent = LangChainAgent(vector_store)

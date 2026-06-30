@@ -4,39 +4,32 @@ from typing import List, Dict
 
 from langchain_ollama import OllamaEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_qdrant import QdrantVectorStore
-from qdrant_client import QdrantClient
+from langchain.vectorstores import Chroma
 
 
-def load_faq_to_qdrant(
+def load_faq_to_chroma(
     data_dir: str,
-    collection_name: str,
-    host: str = "localhost",
-    port: int = 6333,
-) -> QdrantVectorStore:
+    persist_directory: str = "./chroma_faq",
+) -> Chroma:
     """
-    Load all Markdown FAQ files in `data_dir` into a Qdrant collection.
+    Load all Markdown FAQ files in `data_dir` into a ChromaDB collection.
     The function chunks the files, generates embeddings using the
-    `nomic-embed-text` Ollama model, and persists them in Qdrant.
+    `nomic-embed-text` Ollama model, and persists them in ChromaDB.
 
     Parameters
     ----------
     data_dir : str
         Path to the directory containing .md files.
-    collection_name : str
-        Name of the Qdrant collection to create or use.
-    host : str, optional
-        Qdrant host address. Defaults to "localhost".
-    port : int, optional
-        Qdrant port. Defaults to 6333.
+    persist_directory : str, optional
+        Directory where ChromaDB will store its data. Defaults to "./chroma_faq".
 
     Returns
     -------
-    QdrantVectorStore
+    Chroma
         A vector store instance that can be used for similarity search.
     """
-    # Initialize Qdrant client
-    client = QdrantClient(host=host, port=port)
+    # Ensure persistence directory exists
+    os.makedirs(persist_directory, exist_ok=True)
 
     # Read and chunk all markdown files
     texts: List[str] = []
@@ -52,28 +45,27 @@ def load_faq_to_qdrant(
     # Create embeddings
     embeddings = OllamaEmbeddings(model="nomic-embed-text")
 
-    # Persist to Qdrant
-    vector_store = QdrantVectorStore.from_texts(
+    # Persist to ChromaDB
+    vector_store = Chroma.from_texts(
         texts=texts,
         embedding=embeddings,
-        collection_name=collection_name,
-        client=client,
+        persist_directory=persist_directory,
     )
     return vector_store
 
 
 def search_course_docs(
-    vector_store: QdrantVectorStore,
+    vector_store: Chroma,
     query: str,
     k: int = 3,
 ) -> List[Dict]:
     """
-    Search the Qdrant collection for the most relevant documents.
+    Search the ChromaDB collection for the most relevant documents.
 
     Parameters
     ----------
-    vector_store : QdrantVectorStore
-        The vector store instance created by `load_faq_to_qdrant`.
+    vector_store : Chroma
+        The vector store instance created by `load_faq_to_chroma`.
     query : str
         The search query.
     k : int, optional

@@ -1,3 +1,4 @@
+# Legacy simple agent (unused in the current implementation)
 from typing import Any
 
 class Agent:

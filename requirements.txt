@@ -1,7 +1,7 @@
 langchain
 langchain-community
-langchain-chroma
 langchain-ollama
-chromadb
+qdrant-client
+langchain-qdrant
 httpx
 python-dotenv

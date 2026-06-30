@@ -2,24 +2,18 @@ import json
 from pathlib import Path
 from typing import List, Dict
 
-from langchain.tools import tool
+DATA_DIR = Path(__file__).parent.parent / "data"
 
-@tool
 def fetch_course_meta(query: str) -> List[Dict]:
     """
-    Fetch course metadata that matches the query.
-    The metadata is read from data/course_meta.json.
+    Fetch course metadata entries that match the query string.
     """
-    data_file = Path(__file__).parent.parent / "data" / "course_meta.json"
-    with open(data_file, "r", encoding="utf-8") as f:
-        meta = json.load(f)
-
-    # Simple keyword matching
+    meta_path = DATA_DIR / "course_meta.json"
+    with open(meta_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
     query_lower = query.lower()
-    matches = [
-        item
-        for item in meta
-        if query_lower in item["title"].lower()
-        or query_lower in item["description"].lower()
-    ]
-    return matches
+    results = []
+    for entry in data:
+        if query_lower in entry.get("title", "").lower() or query_lower in entry.get("description", "").lower():
+            results.append(entry)
+    return results

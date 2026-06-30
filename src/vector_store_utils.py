@@ -2,64 +2,88 @@ import os
 from pathlib import Path
 from typing import List, Dict
 
-from chromadb import PersistentClient
 from langchain_ollama import OllamaEmbeddings
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_qdrant import QdrantVectorStore
+from qdrant_client import QdrantClient
 
-def load_data_to_chroma(
+
+def load_faq_to_qdrant(
     data_dir: str,
-    collection_name: str = "faq_collection",
-    persist_dir: str = "./chroma_faq",
-) -> PersistentClient:
+    collection_name: str,
+    host: str = "localhost",
+    port: int = 6333,
+) -> QdrantVectorStore:
     """
-    Load all .md files from data_dir into a ChromaDB collection.
-    The collection is persisted to persist_dir.
+    Load all Markdown FAQ files in `data_dir` into a Qdrant collection.
+    The function chunks the files, generates embeddings using the
+    `nomic-embed-text` Ollama model, and persists them in Qdrant.
+
+    Parameters
+    ----------
+    data_dir : str
+        Path to the directory containing .md files.
+    collection_name : str
+        Name of the Qdrant collection to create or use.
+    host : str, optional
+        Qdrant host address. Defaults to "localhost".
+    port : int, optional
+        Qdrant port. Defaults to 6333.
+
+    Returns
+    -------
+    QdrantVectorStore
+        A vector store instance that can be used for similarity search.
     """
-    client = PersistentClient(path=persist_dir)
-    collection = client.get_or_create_collection(name=collection_name)
+    # Initialize Qdrant client
+    client = QdrantClient(host=host, port=port)
 
-    # Use Ollama embeddings
-    embeddings = OllamaEmbeddings(model="nomic-embed-text")
-
-    # Prepare documents
-    documents = []
-    metadatas = []
-    ids = []
-
+    # Read and chunk all markdown files
+    texts: List[str] = []
     for md_file in Path(data_dir).glob("*.md"):
         with open(md_file, "r", encoding="utf-8") as f:
             content = f.read()
-        # Split into chunks by double newline
-        chunks = [chunk.strip() for chunk in content.split("\n\n") if chunk.strip()]
-        for i, chunk in enumerate(chunks):
-            documents.append(chunk)
-            metadatas.append({"source": md_file.name})
-            ids.append(f"{md_file.stem}_{i}")
-
-    if documents:
-        collection.add(
-            documents=documents,
-            ids=ids,
-            metadatas=metadatas,
-            embeddings=embeddings,
+        splitter = RecursiveCharacterTextSplitter(
+            chunk_size=500, chunk_overlap=50, separators=["\n\n", "\n", " ", ""]
         )
+        chunks = splitter.split_text(content)
+        texts.extend(chunks)
 
-    return collection
+    # Create embeddings
+    embeddings = OllamaEmbeddings(model="nomic-embed-text")
+
+    # Persist to Qdrant
+    vector_store = QdrantVectorStore.from_texts(
+        texts=texts,
+        embedding=embeddings,
+        collection_name=collection_name,
+        client=client,
+    )
+    return vector_store
+
 
 def search_course_docs(
-    collection,
+    vector_store: QdrantVectorStore,
     query: str,
     k: int = 3,
 ) -> List[Dict]:
     """
-    Query the ChromaDB collection and return the top k relevant documents.
-    Each result is a dict with 'page_content' and 'metadata'.
+    Search the Qdrant collection for the most relevant documents.
+
+    Parameters
+    ----------
+    vector_store : QdrantVectorStore
+        The vector store instance created by `load_faq_to_qdrant`.
+    query : str
+        The search query.
+    k : int, optional
+        Number of top results to return. Defaults to 3.
+
+    Returns
+    -------
+    List[Dict]
+        A list of dictionaries with a single key `page_content` containing
+        the matched text.
     """
-    results = collection.query(
-        query_texts=[query],
-        n_results=k,
-        include=["documents", "metadatas"],
-    )
-    docs = []
-    for doc, meta in zip(results["documents"][0], results["metadatas"][0]):
-        docs.append({"page_content": doc, "metadata": meta})
-    return docs
+    docs = vector_store.similarity_search(query, k=k)
+    return [{"page_content": doc.page_content} for doc in docs]

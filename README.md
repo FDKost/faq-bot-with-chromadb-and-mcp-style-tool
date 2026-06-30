@@ -1,13 +1,13 @@
-# FAQ Bot: ChromaDB + MCP‑style Tool
+# FAQ Bot: Qdrant + MCP‑style Tool
 
-This project demonstrates a simple FAQ bot that uses **ChromaDB** for vector search and a mock metadata service (MCP‑style) for structured data.  
+This project demonstrates a simple FAQ bot that uses **Qdrant** for vector search and a mock metadata service (MCP‑style) for structured data.  
 The bot is built with **LangChain** and can be interacted with via a command‑line interface.
 
 ## Features
 
-- **Vector Search** – Load Markdown FAQ files into a persistent ChromaDB store and query them using the `nomic-embed-text` model from Ollama.
+- **Vector Search** – Load Markdown FAQ files into a persistent Qdrant store and query them using the `nomic-embed-text` model from Ollama.
 - **Metadata Service** – Fetch course metadata from a static JSON file.
-- **LangChain Agent** – Routes queries to the appropriate tool (Chroma or MCP) and tags the answer with the source.
+- **LangChain Agent** – Routes queries to the appropriate tool (Qdrant or MCP) and tags the answer with the source.
 - **CLI** – Run preset questions or interactively ask any question.
 
 ## Setup
@@ -46,7 +46,17 @@ The bot is built with **LangChain** and can be interacted with via a command‑l
    ollama pull llama3
    ```
 
-5. **Run the bot**
+5. **Run a Qdrant server**
+
+   The bot requires a running Qdrant instance. The easiest way is to use Docker:
+
+   ```bash
+   docker run -p 6333:6333 qdrant/qdrant
+   ```
+
+   This will start Qdrant on `localhost:6333`.
+
+6. **Run the bot**
 
    ```bash
    python src/main.py
@@ -65,12 +75,12 @@ faq-bot/
 │   ├── faq3.md
 │   └── course_meta.json
 ├── src/
-│   ├── vector_store_utils.py   # ChromaDB helpers
+│   ├── vector_store_utils.py   # Qdrant helpers
 │   ├── mcp_utils.py            # Metadata helpers
 │   ├── langchain_agent.py
 │   ├── main.py
 │   └── agent.py                # Legacy simple agent (unused)
-├── chroma_faq/                 # Persisted ChromaDB store (created on first run)
+├── qdrant_faq/                 # Persisted Qdrant data (created on first run)
 ├── requirements.txt
 └── README.md
 ```

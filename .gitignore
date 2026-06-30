@@ -15,5 +15,4 @@ __pycache__/
 .env
 venv/
 .venv/
-chroma_faq/
 qdrant_faq/

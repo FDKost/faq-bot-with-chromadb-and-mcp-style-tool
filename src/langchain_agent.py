@@ -1,21 +1,21 @@
 import json
 from langchain_ollama import Ollama
 from langchain.agents import Tool, initialize_agent, AgentType
-from src.vector_store_utils import search_qdrant
+from src.vector_store_utils import search_course_docs
 from src.mcp_utils import fetch_course_meta
 
-def qdrant_search_tool(vector_store) -> Tool:
+def chroma_search_tool(collection) -> Tool:
     def _search(query: str) -> str:
-        results = search_qdrant(vector_store, query)
+        results = search_course_docs(collection, query, k=3)
         if not results:
             return "No relevant documents found."
         return "\n\n".join(
-            [f"Source {i+1}:\n{res.page_content}" for i, res in enumerate(results)]
-        )
+            [f"Source {i+1}:\n{res['page_content']}" for i, res in enumerate(results)]
+        ) + "\nSource: chroma"
     return Tool(
-        name="Qdrant Search",
+        name="Chroma Search",
         func=_search,
-        description="Search the FAQ stored in Qdrant. Use this for general course questions."
+        description="Search the FAQ stored in Chroma. Use this for general course questions."
     )
 
 def mcp_meta_tool() -> Tool:
@@ -25,7 +25,7 @@ def mcp_meta_tool() -> Tool:
             return "No matching metadata found."
         return "\n\n".join(
             [f"Meta {i+1}:\n{json.dumps(res, indent=2)}" for i, res in enumerate(results)]
-        )
+        ) + "\nSource: mcp_meta"
     return Tool(
         name="MCP Meta",
         func=_meta,
@@ -33,9 +33,9 @@ def mcp_meta_tool() -> Tool:
     )
 
 class LangChainAgent:
-    def __init__(self, vector_store, llm=None):
+    def __init__(self, collection, llm=None):
         self.llm = llm or Ollama(model="llama3", temperature=0)
-        self.tools = [qdrant_search_tool(vector_store), mcp_meta_tool()]
+        self.tools = [chroma_search_tool(collection), mcp_meta_tool()]
         self.agent = initialize_agent(
             self.tools,
             self.llm,
@@ -43,20 +43,13 @@ class LangChainAgent:
             verbose=False,
             agent_kwargs={
                 "system_message": (
-                    "You are a helpful assistant. Use the Qdrant Search tool for general FAQ questions "
+                    "You are a helpful assistant. Use the Chroma Search tool for general FAQ questions "
                     "and the MCP Meta tool for metadata queries. After providing the answer, "
-                    "include a source tag: 'Source: qdrant' or 'Source: mcp_meta'."
+                    "include a source tag: 'Source: chroma' or 'Source: mcp_meta'."
                 )
             },
         )
 
     def answer(self, question: str) -> str:
         response = self.agent.run(question)
-        # Determine source based on content markers
-        if "Source" in response:
-            source = "qdrant"
-        elif "Meta" in response:
-            source = "mcp_meta"
-        else:
-            source = "unknown"
-        return f"{response}\nSource: {source}"
+        return response

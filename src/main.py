@@ -2,7 +2,7 @@ import argparse
 import os
 from pathlib import Path
 
-from src.vector_store_utils import load_data_to_qdrant
+from src.vector_store_utils import load_data_to_chroma
 from src.langchain_agent import LangChainAgent
 
 def main():
@@ -10,28 +10,22 @@ def main():
     parser.add_argument("--preset", action="store_true", help="Run preset questions")
     args = parser.parse_args()
 
-    # Environment variables
-    qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333")
-    qdrant_api_key = os.getenv("QDRANT_API_KEY", None)
-    collection_name = "faq_collection"
-
     data_dir = Path(__file__).parent.parent / "data"
 
-    # Load data into Qdrant
-    vector_store = load_data_to_qdrant(
+    # Load data into Chroma
+    collection = load_data_to_chroma(
         data_dir=str(data_dir),
-        collection_name=collection_name,
-        qdrant_url=qdrant_url,
-        qdrant_api_key=qdrant_api_key,
+        collection_name="faq_collection",
+        persist_dir="./chroma_faq",
     )
 
-    agent = LangChainAgent(vector_store)
+    agent = LangChainAgent(collection)
 
     if args.preset:
         questions = [
             "What is the grading policy?",
+            "What is the lecture schedule?",
             "When is the next lecture?",
-            "What is the deadline for assignment 1?",
         ]
         for q in questions:
             print(f"\nQ: {q}")

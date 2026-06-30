@@ -1,5 +1,5 @@
-# Alias for backward compatibility
+import typer
 from .cli import app
 
 if __name__ == "__main__":
-    app()
+    typer.run(app)

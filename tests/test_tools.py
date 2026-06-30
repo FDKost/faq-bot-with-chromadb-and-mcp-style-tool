@@ -1,26 +1,20 @@
 import json
-from fastapi.testclient import TestClient
-import pytest
+from unittest.mock import patch
 
-from src.mock_server import app as mock_app
 from src.tools import search_course_docs_tool, fetch_course_meta_tool
 
-@pytest.fixture
-def mock_server():
-    client = TestClient(mock_app)
-    return client
+def test_search_course_docs_tool_returns_string():
+    with patch("src.ingestion.search_course_docs") as mock_search:
+        mock_search.return_value = ["doc1", "doc2"]
+        result = search_course_docs_tool.run("query")
+        assert result == "doc1\ndoc2"
 
-def test_search_course_docs_tool():
-    # Ensure ChromaDB is populated
-    from src.ingestion import load_faq_to_chroma
-    load_faq_to_chroma(data_dir="data", chroma_path="chroma_faq_test")
-    # Call tool
-    result = search_course_docs_tool("assignment")
-    assert "source: chroma" in result
-    assert len(result) > 0
-
-def test_fetch_course_meta_tool(mock_server):
-    # Mock server already running via TestClient
-    result = fetch_course_meta_tool("Lecture 2")
-    assert "source: mcp_meta" in result
-    assert "Lecture 2" in result
+def test_fetch_course_meta_tool_returns_string():
+    # Mock the HTTP response
+    with patch("httpx.get") as mock_get:
+        mock_get.return_value.status_code = 200
+        mock_get.return_value.json.return_value = [
+            {"title": "Lecture 2", "description": "Advanced topics", "date": "2023-09-08"}
+        ]
+        result = fetch_course_meta_tool.run("Lecture 2")
+        assert json.loads(result)["title"] == "Lecture 2"

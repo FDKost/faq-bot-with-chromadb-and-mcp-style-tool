@@ -1,34 +1,34 @@
-import httpx
+import json
+import os
 from typing import List
 
-from langchain.tools import tool
+import httpx
+from langchain.tools import BaseTool
 
 from .ingestion import search_course_docs
 
-@tool
-def search_course_docs_tool(query: str) -> str:
-    """
-    Search course documents in ChromaDB and return relevant snippets.
-    """
-    snippets: List[str] = search_course_docs(query)
-    if not snippets:
-        return "No relevant documents found.\nsource: chroma"
-    return "\n".join(snippets) + "\nsource: chroma"
+MOCK_SERVER_URL = os.getenv("MOCK_SERVER_URL", "http://localhost:8000")
 
-def fetch_course_meta(query: str) -> dict:
-    """
-    Perform an HTTP GET request to the local mock server to retrieve course metadata.
-    """
-    url = "http://localhost:8000/meta"
-    params = {"query": query}
-    response = httpx.get(url, params=params)
-    response.raise_for_status()
-    return response.json()
+class SearchCourseDocsTool(BaseTool):
+    name = "search_course_docs"
+    description = "Search course documents in ChromaDB."
+    def _run(self, query: str) -> str:
+        results = search_course_docs(query)
+        return "\n".join(results)
 
-@tool
-def fetch_course_meta_tool(query: str) -> str:
-    """
-    Fetch course metadata from the mock server and return it as a string.
-    """
-    meta = fetch_course_meta(query)
-    return f"{meta}\nsource: mcp_meta"
+class FetchCourseMetaTool(BaseTool):
+    name = "fetch_course_meta"
+    description = "Fetch course metadata from the MCP mock server."
+    def _run(self, query: str) -> str:
+        # Simple heuristic: look for a date in the query
+        response = httpx.get(f"{MOCK_SERVER_URL}/metadata")
+        response.raise_for_status()
+        data = response.json()
+        # Return the first matching entry
+        for entry in data:
+            if entry.get("title") and entry["title"].lower() in query.lower():
+                return json.dumps(entry, indent=2)
+        return "No matching metadata found."
+
+search_course_docs_tool = SearchCourseDocsTool()
+fetch_course_meta_tool = FetchCourseMetaTool()

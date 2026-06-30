@@ -15,6 +15,7 @@ faq_bot/
 │   ├── ingestion.py    # Load markdown files into ChromaDB
 │   ├── tools.py        # LangChain tools for searching and metadata
 │   ├── mock_server.py  # FastAPI mock server for metadata
+│   ├── main.py         # Entry point for the CLI
 │   └── __init__.py
 ├── data/
 │   ├── sample.md        # Example course material
@@ -31,7 +32,7 @@ faq_bot/
 ## Prerequisites
 
 * Python 3.10 or newer
-* Ollama running locally with the `nomic-embed-text` model
+* Ollama running locally with the `llama3` model and the `nomic-embed-text` model
   (see https://ollama.com/ for installation)
 
 ## Installation

@@ -1,4 +1,5 @@
-from langchain.chat_models import ChatOpenAI
+import os
+from langchain_ollama import Ollama
 from langchain.agents import initialize_agent, AgentType
 from langchain.schema import SystemMessage
 
@@ -10,7 +11,11 @@ def build_agent():
     or the MCP metadata tool based on the content of the query.
     """
     tools = [search_course_docs_tool, fetch_course_meta_tool]
-    llm = ChatOpenAI(temperature=0)
+    llm = Ollama(
+        model=os.getenv("OLLAMA_MODEL", "llama3"),
+        base_url=os.getenv("OLLAMA_URL", "http://localhost:11434"),
+        temperature=0,
+    )
 
     system_prompt = SystemMessage(
         content=(

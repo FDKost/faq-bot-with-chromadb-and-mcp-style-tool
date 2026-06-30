@@ -1,68 +1,47 @@
 import os
 from pathlib import Path
-from typing import List, Dict
-
-from langchain.document_loaders import TextLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from typing import List
 from langchain_ollama import OllamaEmbeddings
-from langchain.vectorstores import Qdrant
-from qdrant_client import QdrantClient
+from langchain_qdrant import QdrantVectorStore
 from langchain.docstore.document import Document
 
 def load_data_to_qdrant(
     data_dir: str,
     collection_name: str,
     qdrant_url: str,
-    qdrant_api_key: str,
-) -> Qdrant:
+    qdrant_api_key: str = None,
+) -> QdrantVectorStore:
     """
-    Load markdown files from the data directory, chunk them,
-    and store them in a persistent Qdrant vector store.
+    Load all .md files from `data_dir`, chunk them by double newline,
+    embed them using the Ollama `nomic-embed-text` model, and store
+    the embeddings in a Qdrant collection.
     """
-    data_path = Path(data_dir)
-    md_files = list(data_path.glob("*.md"))
-    documents: List[Document] = []
-    for file_path in md_files:
-        loader = TextLoader(str(file_path))
-        docs = loader.load()
-        documents.extend(docs)
-
-    splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
-    texts = splitter.split_documents(documents)
+    texts: List[str] = []
+    for file_path in Path(data_dir).glob("*.md"):
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+            # Simple chunking: split by double newline
+            chunks = [chunk.strip() for chunk in content.split("\n\n") if chunk.strip()]
+            texts.extend(chunks)
 
     embeddings = OllamaEmbeddings(model="nomic-embed-text")
 
-    client = QdrantClient(url=qdrant_url, api_key=qdrant_api_key)
-
-    vector_store = Qdrant.from_documents(
+    store = QdrantVectorStore.from_texts(
         texts,
         embeddings,
-        client=client,
         collection_name=collection_name,
+        url=qdrant_url,
+        api_key=qdrant_api_key,
     )
-    return vector_store
-
-
-def get_qdrant_vector_store(
-    collection_name: str,
-    qdrant_url: str,
-    qdrant_api_key: str,
-) -> Qdrant:
-    """
-    Return an existing Qdrant vector store instance for later use.
-    """
-    client = QdrantClient(url=qdrant_url, api_key=qdrant_api_key)
-    vector_store = Qdrant(client=client, collection_name=collection_name)
-    return vector_store
-
+    return store
 
 def search_qdrant(
-    vector_store: Qdrant,
+    vector_store: QdrantVectorStore,
     query: str,
-    k: int = 5,
+    k: int = 3,
 ) -> List[Document]:
     """
-    Perform a similarity search on the Qdrant collection and return the top‑k documents.
+    Perform a similarity search in the Qdrant collection.
+    Returns a list of Documents with `page_content` containing the chunk text.
     """
-    results = vector_store.similarity_search(query, k=k)
-    return results
+    return vector_store.similarity_search(query, k=k)

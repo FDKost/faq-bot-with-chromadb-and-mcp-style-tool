@@ -1,22 +1,23 @@
 import json
 from pathlib import Path
-from typing import List, Dict
 
-def fetch_course_meta(query: str) -> List[Dict]:
+def get_next_lecture_date() -> str:
     """
-    Fetch course metadata from a static JSON file.
-    Returns a list of matching entries where the query matches
-    the title or description (case-insensitive).
+    Return a mock next lecture date.
     """
-    data_file = Path(__file__).parent.parent / "data" / "course_meta.json"
-    with open(data_file, "r", encoding="utf-8") as f:
+    return "Next lecture is on Monday, 10 AM."
+
+def fetch_course_meta(query: str) -> str:
+    """
+    Fetch metadata about the course from a static JSON file.
+    """
+    meta_path = Path("data/course_meta.json")
+    if not meta_path.exists():
+        return "Metadata file not found."
+    with meta_path.open() as f:
         data = json.load(f)
-
-    query_lower = query.lower()
-    results = [
-        entry
-        for entry in data
-        if query_lower in entry["title"].lower()
-        or query_lower in entry["description"].lower()
-    ]
-    return results
+    # Simple keyword search
+    for key, value in data.items():
+        if key.lower() in query.lower():
+            return f"{key}: {value}"
+    return "No metadata found for query."

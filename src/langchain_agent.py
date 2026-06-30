@@ -20,36 +20,20 @@ def chroma_search_tool(vector_store) -> Tool:
 
 def mcp_meta_tool() -> Tool:
     def _meta(query: str) -> str:
-        results = fetch_course_meta(query)
-        if not results:
-            return "No matching metadata found."
-        return "\n\n".join(
-            [f"Meta {i+1}:\n{json.dumps(res, indent=2)}" for i, res in enumerate(results)]
-        ) + "\nSource: mcp_meta"
+        return fetch_course_meta(query)
     return Tool(
-        name="MCP Meta",
+        name="MCP Metadata",
         func=_meta,
-        description="Fetch course metadata. Use this for questions about deadlines, lecture dates, etc."
+        description="Fetch metadata about the course from the MCP service."
     )
 
-class LangChainAgent:
-    def __init__(self, vector_store, llm=None):
-        self.llm = llm or Ollama(model="llama3", temperature=0)
-        self.tools = [chroma_search_tool(vector_store), mcp_meta_tool()]
-        self.agent = initialize_agent(
-            self.tools,
-            self.llm,
-            agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-            verbose=False,
-            agent_kwargs={
-                "system_message": (
-                    "You are a helpful assistant. Use the Chroma Search tool for general FAQ questions "
-                    "and the MCP Meta tool for metadata queries. After providing the answer, "
-                    "include a source tag: 'Source: chroma' or 'Source: mcp_meta'."
-                )
-            },
-        )
-
-    def answer(self, question: str) -> str:
-        response = self.agent.run(question)
-        return response
+def create_agent(vector_store):
+    tools = [chroma_search_tool(vector_store), mcp_meta_tool()]
+    llm = Ollama(model="llama3")
+    agent = initialize_agent(
+        tools,
+        llm,
+        agent=AgentType.CHAT_CONVERSATIONAL_REACT_DESCRIPTION,
+        verbose=True,
+    )
+    return agent

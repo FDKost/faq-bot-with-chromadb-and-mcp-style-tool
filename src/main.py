@@ -1,41 +1,43 @@
 import argparse
-import os
-from pathlib import Path
-
-from src.vector_store_utils import load_faq_to_chroma
-from src.langchain_agent import LangChainAgent
+from src.vector_store_utils import load_faq_docs, create_vector_store
+from src.langchain_agent import create_agent
 
 def main():
-    parser = argparse.ArgumentParser(description="FAQ Bot")
-    parser.add_argument("--preset", action="store_true", help="Run preset questions")
+    parser = argparse.ArgumentParser(description="FAQ Bot CLI")
+    parser.add_argument(
+        "--preset",
+        action="store_true",
+        help="Run preset questions instead of interactive mode",
+    )
     args = parser.parse_args()
 
-    data_dir = Path(__file__).parent.parent / "data"
+    # Load documents and create vector store
+    docs = load_faq_docs()
+    collection = create_vector_store(docs)
 
-    # Load data into Chroma
-    vector_store = load_faq_to_chroma(
-        data_dir=str(data_dir),
-        persist_directory="./chroma_faq",
-    )
-
-    agent = LangChainAgent(vector_store)
+    # Create the LangChain agent
+    agent = create_agent(collection)
 
     if args.preset:
-        questions = [
-            "What is the grading policy?",
-            "What is the lecture schedule?",
+        preset_questions = [
+            "What is the deadline for assignment 1?",
+            "How is grading determined?",
             "When is the next lecture?",
         ]
-        for q in questions:
-            print(f"\nQ: {q}")
-            print(f"A: {agent.answer(q)}")
+        for q in preset_questions:
+            print(f"Q: {q}")
+            print(f"A: {agent.run(q)}\n")
     else:
-        print("Enter your question (type 'exit' to quit):")
+        print("Enter your questions (type 'quit' to exit):")
         while True:
-            q = input("> ")
-            if q.lower() in ("exit", "quit"):
+            try:
+                q = input("> ")
+                if q.lower() in ("quit", "exit"):
+                    break
+                print(agent.run(q))
+            except (KeyboardInterrupt, EOFError):
+                print("\nExiting.")
                 break
-            print(f"A: {agent.answer(q)}")
 
 if __name__ == "__main__":
     main()

@@ -4,7 +4,7 @@ from typing import List, Dict
 
 from langchain.document_loaders import TextLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.embeddings import SentenceTransformerEmbeddings
+from langchain_ollama import OllamaEmbeddings
 from langchain.vectorstores import Chroma
 
 CHROMA_DIR = Path(__file__).parent.parent / "chroma_faq"
@@ -25,9 +25,8 @@ def load_faq_to_chroma() -> Chroma:
     splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
     texts = splitter.split_documents(documents)
 
-    embeddings = SentenceTransformerEmbeddings(model_name="all-MiniLM-L6-v2")
+    embeddings = OllamaEmbeddings(model="nomic-embed-text")
 
-    # Create or load the Chroma store
     chroma = Chroma.from_documents(
         texts,
         embeddings,
@@ -41,7 +40,7 @@ def search_course_docs(query: str, k: int = 3) -> List[Dict]:
     Query the Chroma vector store and return the top k results.
     Each result is a dict with 'content' and 'metadata'.
     """
-    embeddings = SentenceTransformerEmbeddings(model_name="all-MiniLM-L6-v2")
+    embeddings = OllamaEmbeddings(model="nomic-embed-text")
     chroma = Chroma(
         persist_directory=str(CHROMA_DIR),
         embedding_function=embeddings,

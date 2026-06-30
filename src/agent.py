@@ -1,7 +1,3 @@
-# Minimal implementation of the Agent for testing purposes
-# This file contains only the Agent class to avoid unnecessary imports
-# that may not be available in the test environment.
-
 from typing import Any
 
 class Agent:

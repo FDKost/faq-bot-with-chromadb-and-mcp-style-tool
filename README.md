@@ -1,7 +1,7 @@
-# FAQ Bot with ChromaDB and MCP-style Tool
+# FAQ Bot with ChromaDB and MCP‑style Tool
 
 This project implements a simple FAQ bot that can answer questions about course materials
-using a local ChromaDB vector store and about course metadata using a mock MCP-style
+using a local ChromaDB vector store and about course metadata using a mock MCP‑style
 HTTP service. The bot is built with LangChain and can be interacted with via a
 command‑line interface.
 
@@ -10,17 +10,19 @@ command‑line interface.
 ```
 faq_bot/
 ├── src/
-│   ├── main.py          # CLI entry point
-│   ├── ingestion.py     # Load markdown files into ChromaDB
-│   ├── tools.py         # LangChain tools for searching and metadata
-│   ├── agent.py         # Agent that routes queries
-│   └── mock_server.py   # FastAPI mock server for metadata
+│   ├── cli.py          # CLI entry point
+│   ├── agent.py        # Agent that routes queries
+│   ├── ingestion.py    # Load markdown files into ChromaDB
+│   ├── tools.py        # LangChain tools for searching and metadata
+│   ├── mock_server.py  # FastAPI mock server for metadata
+│   └── __init__.py
 ├── data/
 │   ├── sample.md        # Example course material
 │   └── course_meta.json # Example metadata
 ├── tests/
 │   ├── test_ingestion.py
-│   └── test_tools.py
+│   ├── test_tools.py
+│   └── test_agent.py
 ├── requirements.txt
 ├── .env.example
 └── README.md
@@ -28,12 +30,9 @@ faq_bot/
 
 ## Prerequisites
 
-* Python 3.10 or newer
-* An OpenAI API key (for embeddings and LLM). Set it in a `.env` file:
-
-```
-OPENAI_API_KEY=your_api_key_here
-```
+* Python 3.10 or newer
+* Ollama running locally with the `nomic-embed-text` model
+  (see https://ollama.com/ for installation)
 
 ## Installation
 
@@ -63,18 +62,18 @@ The server will be available at `http://localhost:8000`.
 ## Loading the FAQ into ChromaDB
 
 ```bash
-python -m src.main init
+python -m src.cli init
 ```
 
 This reads all `.md` files in `data/`, splits them into chunks, embeds them with
-OpenAI embeddings, and persists the vector store at `./chroma_faq`.
+Ollama embeddings, and persists the vector store at `./chroma_faq`.
 
 ## Using the Bot
 
 ### Sample Questions
 
 ```bash
-python -m src.main sample
+python -m src.cli sample
 ```
 
 This runs three predefined questions:
@@ -85,7 +84,7 @@ This runs three predefined questions:
 ### Interactive Mode
 
 ```bash
-python -m src.main interactive
+python -m src.cli interactive
 ```
 
 Type any question and press Enter. Type `exit` to quit.
@@ -93,7 +92,7 @@ Type any question and press Enter. Type `exit` to quit.
 ### Single Question
 
 ```bash
-python -m src.main ask "Your question here"
+python -m src.cli ask "Your question here"
 ```
 
 ## Testing

@@ -1,9 +1,9 @@
-import requests
+import httpx
 from typing import List
 
 from langchain.tools import tool
 
-from ingestion import search_course_docs
+from .ingestion import search_course_docs
 
 @tool
 def search_course_docs_tool(query: str) -> str:
@@ -21,7 +21,7 @@ def fetch_course_meta(query: str) -> dict:
     """
     url = "http://localhost:8000/meta"
     params = {"query": query}
-    response = requests.get(url, params=params)
+    response = httpx.get(url, params=params)
     response.raise_for_status()
     return response.json()
 

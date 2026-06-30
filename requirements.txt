@@ -1,8 +1,10 @@
-langchain
+langchain>=0.2
+langchain-chroma
+langchain-ollama
 chromadb
-openai
-requests
+httpx
+python-dotenv
 typer
 fastapi
 uvicorn
-python-dotenv
+pytest

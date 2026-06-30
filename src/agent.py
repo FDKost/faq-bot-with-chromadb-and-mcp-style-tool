@@ -2,7 +2,7 @@ from langchain.chat_models import ChatOpenAI
 from langchain.agents import initialize_agent, AgentType
 from langchain.schema import SystemMessage
 
-from tools import search_course_docs_tool, fetch_course_meta_tool
+from .tools import search_course_docs_tool, fetch_course_meta_tool
 
 def build_agent():
     """
@@ -25,7 +25,7 @@ def build_agent():
         tools,
         llm,
         agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-        verbose=True,
+        verbose=False,
         agent_kwargs={"prefix_messages": [system_prompt]},
     )
     return agent

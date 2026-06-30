@@ -1,0 +1,8 @@
+langchain
+chromadb
+openai
+requests
+typer
+fastapi
+uvicorn
+python-dotenv

@@ -1,6 +1,6 @@
 import argparse
 import sys
-from src.vector_store_utils import load_faq_docs, create_vector_store
+from src.vector_store_utils import load_faq_to_chroma
 from src.langchain_agent import create_agent
 
 def run_preset_questions(preset: str, agent):
@@ -26,9 +26,8 @@ def main():
     args = parser.parse_args()
 
     # Load vector store
-    docs = load_faq_docs()
-    client = create_vector_store(docs)
-    agent = create_agent(client)
+    collection = load_faq_to_chroma()
+    agent = create_agent(collection)
 
     if args.preset:
         run_preset_questions(args.preset, agent)

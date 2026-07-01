@@ -1,57 +1,42 @@
 import argparse
+import sys
 from src.vector_store_utils import load_faq_docs, create_vector_store
 from src.langchain_agent import create_agent
 
+def run_preset_questions(preset: str, agent):
+    questions = [q.strip() for q in preset.split(",") if q.strip()]
+    for q in questions:
+        print(f"\nQuestion: {q}")
+        answer = agent.run(q)
+        print(f"Answer:\n{answer}")
+
+def interactive_mode(agent):
+    print("Enter your question (type 'exit' to quit):")
+    while True:
+        q = input("> ")
+        if q.lower() in ("exit", "quit"):
+            break
+        answer = agent.run(q)
+        print(f"Answer:\n{answer}")
+
 def main():
     parser = argparse.ArgumentParser(description="FAQ Bot CLI")
-    parser.add_argument(
-        "--preset",
-        type=str,
-        default="",
-        help="Comma-separated list of preset questions to run. If omitted, interactive mode is used.",
-    )
-    parser.add_argument(
-        "--interactive",
-        action="store_true",
-        help="Run in interactive REPL mode.",
-    )
+    parser.add_argument("--preset", type=str, help="Comma‑separated preset questions")
+    parser.add_argument("--interactive", action="store_true", help="Interactive mode")
     args = parser.parse_args()
 
-    # Load documents and create vector store
+    # Load vector store
     docs = load_faq_docs()
-    collection = create_vector_store(docs)
-
-    # Create the LangChain agent
-    agent = create_agent(collection)
+    client = create_vector_store(docs)
+    agent = create_agent(client)
 
     if args.preset:
-        preset_questions = [q.strip() for q in args.preset.split(",") if q.strip()]
-        for q in preset_questions:
-            print(f"Q: {q}")
-            print(f"A: {agent.run(q)}\n")
+        run_preset_questions(args.preset, agent)
     elif args.interactive:
-        print("Enter your questions (type 'quit' to exit):")
-        while True:
-            try:
-                q = input("> ")
-                if q.lower() in ("quit", "exit"):
-                    break
-                print(agent.run(q))
-            except (KeyboardInterrupt, EOFError):
-                print("\nExiting.")
-                break
+        interactive_mode(agent)
     else:
-        # Default to interactive if no flags provided
-        print("Enter your questions (type 'quit' to exit):")
-        while True:
-            try:
-                q = input("> ")
-                if q.lower() in ("quit", "exit"):
-                    break
-                print(agent.run(q))
-            except (KeyboardInterrupt, EOFError):
-                print("\nExiting.")
-                break
+        print("No mode selected. Use --preset or --interactive.")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

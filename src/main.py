@@ -6,8 +6,14 @@ def main():
     parser = argparse.ArgumentParser(description="FAQ Bot CLI")
     parser.add_argument(
         "--preset",
+        type=str,
+        default="",
+        help="Comma-separated list of preset questions to run. If omitted, interactive mode is used.",
+    )
+    parser.add_argument(
+        "--interactive",
         action="store_true",
-        help="Run preset questions instead of interactive mode",
+        help="Run in interactive REPL mode.",
     )
     args = parser.parse_args()
 
@@ -19,15 +25,23 @@ def main():
     agent = create_agent(collection)
 
     if args.preset:
-        preset_questions = [
-            "What is the deadline for assignment 1?",
-            "How is grading determined?",
-            "When is the next lecture?",
-        ]
+        preset_questions = [q.strip() for q in args.preset.split(",") if q.strip()]
         for q in preset_questions:
             print(f"Q: {q}")
             print(f"A: {agent.run(q)}\n")
+    elif args.interactive:
+        print("Enter your questions (type 'quit' to exit):")
+        while True:
+            try:
+                q = input("> ")
+                if q.lower() in ("quit", "exit"):
+                    break
+                print(agent.run(q))
+            except (KeyboardInterrupt, EOFError):
+                print("\nExiting.")
+                break
     else:
+        # Default to interactive if no flags provided
         print("Enter your questions (type 'quit' to exit):")
         while True:
             try:
